@@ -1,14 +1,16 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from src.core.db.base import create_session
 from src.core.db.models import Base, Product, Tag
 
 
 class BaseManager:
     model: type[Base]
 
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, session: Session | None = None):
+        self._is_using_existing_session: bool = session is not None
+        self.session: Session = session if session else create_session()
 
     def fetch_specific_by(self, entity_id: str) -> Base | None:
         return self.session.scalar(select(self.model).where(self.model.id == entity_id))
@@ -16,19 +18,22 @@ class BaseManager:
     def fetch_all(self) -> list[Base]:
         return self.session.scalars(select(self.model)).all()
 
+    def delete(self, entity_id: str) -> bool:
+        entity = self.fetch_specific_by(entity_id)
+        if not entity:
+            return False
+        self.session.delete(entity)
+        self.session.commit()
+        return True
+
 
 class TagManager(BaseManager):
     model = Tag
 
-    def ensure_all_are_present(
-        self,
-        tag_names: list[str],
-        *,
-        is_using_existing_session: bool = False,
-    ) -> list[Tag]:
+    def ensure_all_are_present(self, tag_names: list[str]) -> list[Tag]:
         unique_names = set(tag_names)
 
-        existing_tags: list[Tag] = self.session.scalars(
+        existing_tags = self.session.scalars(
             select(Tag).where(
                 Tag.name.in_(unique_names),
             )
@@ -42,12 +47,12 @@ class TagManager(BaseManager):
             self.session.add_all(new_tags)
             update_method = (
                 self.session.flush
-                if is_using_existing_session
+                if self._is_using_existing_session
                 else self.session.commit
             )
             update_method()
 
-        return existing_tags + new_tags
+        return list(existing_tags) + new_tags
 
 
 class ProductManager(BaseManager):
@@ -61,7 +66,7 @@ class ProductManager(BaseManager):
         price: float,
         tag_names: list[str] | None,
     ) -> Product:
-        tags = TagManager(self.session).ensure_all_are_present(tag_names, is_using_existing_session=True)
+        tags = TagManager(self.session).ensure_all_are_present(tag_names)
 
         prod = Product(
             id=entity_id,
@@ -83,7 +88,7 @@ class ProductManager(BaseManager):
         price: float | None = None,
         tag_names: list[str] | None = None,
     ) -> Product | None:
-        product = self.fetch_specific_by(product_id)
+        product: Product = self.fetch_specific_by(product_id)
         if not product:
             return None
 
@@ -95,15 +100,7 @@ class ProductManager(BaseManager):
             product.price = price
 
         if tag_names is not None:
-            product.tags = TagManager(self.session).ensure_all_are_present(tag_names, is_using_existing_session=True)
+            product.tags = TagManager(self.session).ensure_all_are_present(tag_names)
 
         self.session.commit()
         return product
-
-    def delete(self, product_id: str) -> bool:
-        prod = self.fetch_specific_by(product_id)
-        if not prod:
-            return False
-        self.session.delete(prod)
-        self.session.commit()
-        return True
