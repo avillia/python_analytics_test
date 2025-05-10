@@ -47,9 +47,9 @@ def upgrade() -> None:
             primary_key=True
         ),
         sa.Column(
-            "tag_name",
+            "tag_id",
             sa.String(),
-            sa.ForeignKey("tags.name", ondelete="CASCADE"),
+            sa.ForeignKey("tags.id", ondelete="CASCADE"),
             primary_key=True
         ),
     )
