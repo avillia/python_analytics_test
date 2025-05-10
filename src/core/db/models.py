@@ -35,7 +35,8 @@ class Product(Base):
 class Tag(Base):
     __tablename__ = "tags"
 
-    name:  Mapped[str]        = mapped_column(primary_key=True)
+    id:    Mapped[str]        = mapped_column(primary_key=True)
+    name:  Mapped[str]        = mapped_column(String, nullable=False)
     value: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     products: Mapped[list[Product]] = relationship(
