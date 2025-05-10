@@ -20,13 +20,17 @@ class BaseManager:
 class TagManager(BaseManager):
     model = Tag
 
-    def ensure_all_are_present(self, tag_names: list[str]) -> list[Tag]:
+    def ensure_all_are_present(
+        self,
+        tag_names: list[str],
+        *,
+        is_using_existing_session: bool = False,
+    ) -> list[Tag]:
         unique_names = set(tag_names)
 
         existing_tags: list[Tag] = self.session.scalars(
-            select(Tag)
-            .where(
-                Tag.name.in_(unique_names)
+            select(Tag).where(
+                Tag.name.in_(unique_names),
             )
         ).all()
         existing_names = {t.name for t in existing_tags}
@@ -36,7 +40,12 @@ class TagManager(BaseManager):
         new_tags = [Tag(name=name) for name in missing]
         if new_tags:
             self.session.add_all(new_tags)
-            self.session.flush()
+            update_method = (
+                self.session.flush
+                if is_using_existing_session
+                else self.session.commit
+            )
+            update_method()
 
         return existing_tags + new_tags
 
@@ -52,7 +61,7 @@ class ProductManager(BaseManager):
         price: float,
         tag_names: list[str] | None,
     ) -> Product:
-        tags = TagManager(self.session).ensure_all_are_present(tag_names)
+        tags = TagManager(self.session).ensure_all_are_present(tag_names, is_using_existing_session=True)
 
         prod = Product(
             id=entity_id,
@@ -86,7 +95,7 @@ class ProductManager(BaseManager):
             product.price = price
 
         if tag_names is not None:
-            product.tags = TagManager(self.session).ensure_all_are_present(tag_names)
+            product.tags = TagManager(self.session).ensure_all_are_present(tag_names, is_using_existing_session=True)
 
         self.session.commit()
         return product
