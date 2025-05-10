@@ -4,7 +4,10 @@ LABEL authors="Illia Avdiienko"
 WORKDIR /app
 COPY . .
 
-RUN pip install --no-cache -r requirements.txt
+ENV PYTHONUNBUFFERED=1
+
+RUN pip install --no-cache-dir -r requirements.txt
+RUN alembic upgrade head
 
 EXPOSE 8000
 
