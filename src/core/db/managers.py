@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.core.db.base import create_session
-from src.core.db.models import Base, Product, Tag
+from src.core.db.models import Base, Product, Tag, User, AppConfig, Access, Role
 
 
 class BaseManager:
@@ -104,3 +104,37 @@ class ProductManager(BaseManager):
 
         self.session.commit()
         return product
+
+
+class DBAppConfigManager(BaseManager):
+    model = AppConfig
+    TYPE_MAPPING = {
+        "str": str,
+        "int": int,
+        "bool": bool,
+        "float": float,
+    }
+
+    def __getitem__(self, config: str) -> str | bool | int | float:
+        raw_config_from_db = self.session.scalar(
+            select(self.model).where(AppConfig.key == config)
+        )
+        if raw_config_from_db is None:
+            raise LookupError(f"No {config=} found!")
+        return self.TYPE_MAPPING[raw_config_from_db.type](raw_config_from_db.value)
+
+
+class UserManager(BaseManager):
+    model = User
+
+    def lookup_for_user_by(self, login: str) -> User | None:
+        return self.session.scalar(select(self.model).where(User.login == login))
+
+    def gather_all_accesses_for(self, user_id: str) -> list[Access]:
+        stmt = (
+            select(Access)
+            .join(Access.role)
+            .join(Access.role.users)
+            .where(User.id == user_id)
+        )
+        return self.session.scalars(stmt).all()

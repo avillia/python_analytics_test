@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+
 from src.api.routes import routers
 
 app = FastAPI()
