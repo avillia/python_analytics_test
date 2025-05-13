@@ -8,6 +8,7 @@ auth_router = APIRouter(
     tags=["service"],
 )
 
+
 class UserLogin(BaseModel):
     login: str
     password: str
@@ -22,8 +23,16 @@ class UserSignUp(BaseModel):
 @auth_router.get("/")
 async def login(credentials: UserLogin) -> dict:
     try:
-        return {"access_token": obtain_jwt_token_for(credentials.login, credentials.password), "token_type": "bearer"}
+        return {
+            "access_token": obtain_jwt_token_for(
+                credentials.login, credentials.password
+            ),
+            "token_type": "bearer",
+        }
     except KeyError:
         raise HTTPException(status_code=401, detail=f"Invalid password for {login=}!")
     except LookupError:
-        raise HTTPException(status_code=401, detail=f"Invalid username: no user with such {login=} exists!")
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid username: no user with such {login=} exists!",
+        )

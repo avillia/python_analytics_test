@@ -1,10 +1,11 @@
 """init db
 
 Revision ID: c8d7ae288b1d
-Revises: 
+Revises:
 Create Date: 2025-05-10 15:10:00.923518
 
 """
+
 from typing import Sequence
 
 from alembic import op
@@ -12,10 +13,10 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision:      str = "c8d7ae288b1d"
+revision: str = "c8d7ae288b1d"
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
-depends_on:    str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -34,7 +35,7 @@ def upgrade() -> None:
     op.create_table(
         "tags",
         sa.Column("id", sa.String(), primary_key=True),
-        sa.Column("name",  sa.String(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
         sa.Column("value", sa.String(), nullable=True, server_default=None),
     )
 
@@ -44,13 +45,13 @@ def upgrade() -> None:
             "product_id",
             sa.String(),
             sa.ForeignKey("products.id", ondelete="CASCADE"),
-            primary_key=True
+            primary_key=True,
         ),
         sa.Column(
             "tag_id",
             sa.String(),
             sa.ForeignKey("tags.id", ondelete="CASCADE"),
-            primary_key=True
+            primary_key=True,
         ),
     )
 
