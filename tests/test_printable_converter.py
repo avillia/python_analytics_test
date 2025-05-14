@@ -24,6 +24,7 @@ Mavic 3T              896 610.00
 
 """
 
+
 def test_receipt_from_requirements():
     receipt_data = {
         "issuer": "ФОП Джонсонюк Борис",

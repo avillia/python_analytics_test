@@ -5,17 +5,17 @@ Revises: 494a9827374e
 Create Date: 2025-05-14 21:26:01.139233
 
 """
+
 from typing import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision:      str = "112f563907ed"
+revision: str = "112f563907ed"
 down_revision: str | None = "494a9827374e"
 branch_labels: str | Sequence[str] | None = None
-depends_on:    str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -69,7 +69,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("accesses")
-    op.execute('DROP TYPE allowed_method')
+    op.execute("DROP TYPE allowed_method")
     op.drop_table("users_roles")
     op.drop_table("roles")
     op.drop_table("users")

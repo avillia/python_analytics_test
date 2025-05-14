@@ -1,5 +1,5 @@
-from pytest import mark
 from assertpy import assert_that
+from pytest import mark
 
 from src.api.security import is_possible_to_perform_request_based_on
 

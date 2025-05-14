@@ -1,17 +1,17 @@
+from datetime import datetime, timedelta
 from hashlib import sha256
 from hmac import compare_digest
-from datetime import datetime, timedelta
 
 from jwt import encode
 
+from config import CRYPTO_PEPPER, JWT_ALGORITHM, JWT_SECRET_KEY
 from src.core.db.managers import (
-    UserManager,
+    AccessManager,
     DBAppConfigManager,
     RoleManager,
-    AccessManager,
+    UserManager,
 )
 from src.core.utils import generate_alphanumerical_id
-from config import CRYPTO_PEPPER, JWT_ALGORITHM, JWT_SECRET_KEY
 
 
 def hash_password(plain_password: str, salt: str) -> str:

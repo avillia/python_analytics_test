@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Enum, Float, ForeignKey, String, DECIMAL, DATETIME, Integer
+from sqlalchemy import DATETIME, DECIMAL, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from src.core.utils import generate_alphanumerical_id
@@ -16,7 +16,9 @@ class Base(DeclarativeBase):
 class Product(Base):
     __tablename__ = "products"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
+    id: Mapped[str] = mapped_column(
+        primary_key=True, default_factory=generate_alphanumerical_id
+    )
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     price: Mapped[float] = mapped_column(
@@ -33,7 +35,9 @@ class Product(Base):
 class Tag(Base):
     __tablename__ = "tags"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
+    id: Mapped[str] = mapped_column(
+        primary_key=True, default_factory=generate_alphanumerical_id
+    )
     name: Mapped[str] = mapped_column(String)
     value: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
@@ -86,7 +90,9 @@ class User(Base):
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
+    id: Mapped[str] = mapped_column(
+        primary_key=True, default_factory=generate_alphanumerical_id
+    )
     name: Mapped[str] = mapped_column(String(50), unique=True)
 
     users: Mapped[list[User]] = relationship(
@@ -120,7 +126,9 @@ class UsersRoles(Base):
 class Access(Base):
     __tablename__ = "accesses"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
+    id: Mapped[str] = mapped_column(
+        primary_key=True, default_factory=generate_alphanumerical_id
+    )
     role_id: Mapped[str] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"))
     route_url: Mapped[str] = mapped_column(String(200))
     allowed_method: Mapped[str] = mapped_column(
@@ -139,12 +147,16 @@ class Access(Base):
 class Receipt(Base):
     __tablename__ = "receipts"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
+    id: Mapped[str] = mapped_column(
+        primary_key=True, default_factory=generate_alphanumerical_id
+    )
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     payment_type: Mapped[str] = mapped_column(Enum("cash", "cashless"))
     payment_amount: Mapped[Decimal] = mapped_column(DECIMAL(2))
 
-    creation_date: Mapped[datetime] = mapped_column(DATETIME, default_factory=datetime.now)
+    creation_date: Mapped[datetime] = mapped_column(
+        DATETIME, default_factory=datetime.now
+    )
 
     items: Mapped[list[ReceiptItems]] = relationship(
         "ReceiptItems",
@@ -164,8 +176,12 @@ class Receipt(Base):
 class ReceiptItems(Base):
     __tablename__ = "receipt_items"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
-    receipt_id: Mapped[str] = mapped_column(ForeignKey("receipts.id", ondelete="CASCADE"))
+    id: Mapped[str] = mapped_column(
+        primary_key=True, default_factory=generate_alphanumerical_id
+    )
+    receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("receipts.id", ondelete="CASCADE")
+    )
     name: Mapped[str] = mapped_column(String(200))
     price: Mapped[Decimal] = mapped_column(DECIMAL(2))
     quantity: Mapped[int] = mapped_column(Integer)

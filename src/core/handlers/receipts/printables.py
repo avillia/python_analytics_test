@@ -30,7 +30,9 @@ class PrintableConverter:
 
     def _generate_receipt_footer(self, created_at: datetime) -> str:
         timestamp = created_at.strftime(self.datetime_format)
-        return f"{timestamp.center(self.width)}\n{self.thank_you_note.center(self.width)}"
+        return (
+            f"{timestamp.center(self.width)}\n{self.thank_you_note.center(self.width)}"
+        )
 
     def _format_product_line(self, quantity: Decimal, price: Decimal) -> str:
         quantity_str = f"{quantity.normalize()}"
@@ -53,8 +55,12 @@ class PrintableConverter:
         items_lines: list[str] = []
 
         for item in items:
-            items_lines.append(self._format_product_line(item["quantity"], item["price"]))
-            items_lines.append(self._format_product_name_and_total(item["name"], item["total"]))
+            items_lines.append(
+                self._format_product_line(item["quantity"], item["price"])
+            )
+            items_lines.append(
+                self._format_product_name_and_total(item["name"], item["total"])
+            )
             items_lines.append(self.separator_line)
 
         return items_lines

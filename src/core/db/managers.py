@@ -4,13 +4,13 @@ from sqlalchemy.sql.functions import count
 
 from src.core.db.base import create_session
 from src.core.db.models import (
+    Access,
+    AppConfig,
     Base,
     Product,
+    Role,
     Tag,
     User,
-    AppConfig,
-    Access,
-    Role,
     UsersRoles,
 )
 from src.core.utils import generate_alphanumerical_id
