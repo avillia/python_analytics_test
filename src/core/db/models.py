@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from sqlalchemy import Enum, Float, ForeignKey, String
+from datetime import datetime
+from decimal import Decimal
+
+from sqlalchemy import Enum, Float, ForeignKey, String, DECIMAL, DATETIME, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from src.core.utils import generate_alphanumerical_id
 
 
 class Base(DeclarativeBase):
@@ -11,7 +16,7 @@ class Base(DeclarativeBase):
 class Product(Base):
     __tablename__ = "products"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     price: Mapped[float] = mapped_column(
@@ -28,7 +33,7 @@ class Product(Base):
 class Tag(Base):
     __tablename__ = "tags"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
     name: Mapped[str] = mapped_column(String)
     value: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
@@ -81,7 +86,7 @@ class User(Base):
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
     name: Mapped[str] = mapped_column(String(50), unique=True)
 
     users: Mapped[list[User]] = relationship(
@@ -115,7 +120,7 @@ class UsersRoles(Base):
 class Access(Base):
     __tablename__ = "accesses"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
     role_id: Mapped[str] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"))
     route_url: Mapped[str] = mapped_column(String(200))
     allowed_method: Mapped[str] = mapped_column(
@@ -127,6 +132,5 @@ class Access(Base):
     def __repr__(self):
         return (
             f"<Access(role={self.role.name!r}, "
-            f"route_url={self.route_url!r}, "
-            f"method={self.allowed_method!r})>"
+            f"'{self.allowed_method}@{self.route_url}')>"
         )
