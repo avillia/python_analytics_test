@@ -1,8 +1,19 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.functions import count
 
 from src.core.db.base import create_session
-from src.core.db.models import Base, Product, Tag, User, AppConfig, Access, Role
+from src.core.db.models import (
+    Base,
+    Product,
+    Tag,
+    User,
+    AppConfig,
+    Access,
+    Role,
+    UsersRoles,
+)
+from src.core.utils import generate_alphanumerical_id
 
 
 class BaseManager:
@@ -138,3 +149,69 @@ class UserManager(BaseManager):
             .where(User.id == user_id)
         )
         return self.session.scalars(stmt).all()
+
+    def fetch_total_user_count(self) -> int:
+        total = self.session.scalar(select(count()).select_from(User))
+        return int(total)
+
+    def create_new_user_using(
+        self,
+        new_user_id: str,
+        login: str,
+        email: str,
+        password_hash: str,
+    ) -> User:
+        user = User(
+            id=new_user_id,
+            login=login,
+            email=email,
+            password_hash=password_hash,
+        )
+        self.session.add(user)
+        self.session.commit()
+        return user
+
+
+class RoleManager(BaseManager):
+    model = Role
+
+    def ensure_admin_role_exists(self) -> str:
+        stmt = select(Role).where(Role.name == "admin")
+        role = self.session.scalar(stmt)
+        if role:
+            return role.id
+
+        new_id = generate_alphanumerical_id()
+        role = Role(id=new_id, name="admin")
+        self.session.add(role)
+        self.session.commit()
+        return new_id
+
+    def assign(self, new_user_id: str, admin_role_id: str) -> bool:
+        exists_stmt = select(UsersRoles).where(
+            UsersRoles.user_id == new_user_id, UsersRoles.role_id == admin_role_id
+        )
+        existing = self.session.scalar(exists_stmt)
+        if existing:
+            return False
+
+        link = UsersRoles(user_id=new_user_id, role_id=admin_role_id)
+        self.session.add(link)
+        self.session.commit()
+        return True
+
+
+class AccessManager(BaseManager):
+    model = Access
+
+    def grant_unlimited_access_to(self, admin_role_id: str) -> str:
+        new_id = generate_alphanumerical_id()
+        access = Access(
+            id=new_id,
+            role_id=admin_role_id,
+            allowed_method="*",
+            route_url="*",
+        )
+        self.session.add(access)
+        self.session.commit()
+        return new_id
