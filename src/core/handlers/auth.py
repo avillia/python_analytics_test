@@ -11,7 +11,7 @@ from src.core.db.managers import (
     AccessManager,
 )
 from src.core.utils import generate_alphanumerical_id
-from config import CRYPTO_PEPPER
+from config import CRYPTO_PEPPER, JWT_ALGORITHM, JWT_SECRET_KEY
 
 
 def hash_password(plain_password: str, salt: str) -> str:
@@ -58,7 +58,7 @@ def generate_jwt_token_for(user_id: str, accesses: list[str]) -> str:
         "access": accesses,
     }
 
-    token = encode(payload, config["JWT_SECRET_KEY"], algorithm=config["JWT_ALGORITHM"])
+    token = encode(payload, key=JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     return token
 
 
