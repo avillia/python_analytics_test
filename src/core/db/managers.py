@@ -200,6 +200,11 @@ class RoleManager(BaseManager):
         self.session.commit()
         return True
 
+    def lookup_for_role_by(self, role_name) -> Role:
+        return self.session.scalar(
+            select(self.model).where(self.model.name == role_name)
+        )
+
 
 class AccessManager(BaseManager):
     model = Access

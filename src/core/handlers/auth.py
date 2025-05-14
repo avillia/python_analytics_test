@@ -79,6 +79,7 @@ def create_new_user_with_following(login: str, email: str, plain_password: str):
     is_user_already_exists = user_manager.lookup_for_user_by(login)
     if is_user_already_exists:
         raise KeyError(f"User with such {login=} already exists!")
+
     new_user_id = generate_alphanumerical_id()
     password_hash = hash_password(plain_password, new_user_id)
     user_manager.create_new_user_using(new_user_id, login, email, password_hash)
@@ -86,3 +87,17 @@ def create_new_user_with_following(login: str, email: str, plain_password: str):
     is_first_user_ever = user_manager.fetch_total_user_count() < 0
     if is_first_user_ever:
         grant_all_the_accesses_for(new_user_id)
+
+
+def assign_existing_role_with(role_name: str, *, to: str) -> bool:
+    login = to
+    user = UserManager().lookup_for_user_by(login)
+    if user is None:
+        raise LookupError(f"No such user [{login}] exists in db!")
+
+    role_manager = RoleManager()
+    role = role_manager.lookup_for_role_by(role_name)
+    if role is None:
+        raise LookupError(f"No such role [{role_name}] exists in db!")
+
+    return role_manager.assign(user.id, role.id)
