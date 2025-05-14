@@ -99,14 +99,14 @@ class Role(Base):
         return f"<Role(name={self.name!r})>"
 
 
-class UserRoles(Base):
+class UsersRoles(Base):
     __tablename__ = "users_roles"
 
     user_id: Mapped[str] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    tag_name: Mapped[str] = mapped_column(
+    role_id: Mapped[str] = mapped_column(
         ForeignKey("roles.id", ondelete="CASCADE"),
         primary_key=True,
     )
@@ -119,13 +119,7 @@ class Access(Base):
     role_id: Mapped[str] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"))
     route_url: Mapped[str] = mapped_column(String(200))
     allowed_method: Mapped[str] = mapped_column(
-        Enum(
-            "GET",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE",
-        )
+        Enum("GET", "POST", "PUT", "PATCH", "DELETE", "*")
     )
 
     role: Mapped[Role] = relationship("Role", back_populates="accesses")
