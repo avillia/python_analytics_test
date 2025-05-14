@@ -134,3 +134,47 @@ class Access(Base):
             f"<Access(role={self.role.name!r}, "
             f"'{self.allowed_method}@{self.route_url}')>"
         )
+
+
+class Receipt(Base):
+    __tablename__ = "receipts"
+
+    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    payment_type: Mapped[str] = mapped_column(Enum("cash", "cashless"))
+    payment_amount: Mapped[Decimal] = mapped_column(DECIMAL(2))
+
+    creation_date: Mapped[datetime] = mapped_column(DATETIME, default_factory=datetime.now)
+
+    items: Mapped[list[ReceiptItems]] = relationship(
+        "ReceiptItems",
+        back_populates="receipt",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def total(self) -> Decimal:
+        return sum(item.total for item in self.items)
+
+    @property
+    def rest(self) -> Decimal:
+        return self.payment_amount - self.total
+
+
+class ReceiptItems(Base):
+    __tablename__ = "receipt_items"
+
+    id: Mapped[str] = mapped_column(primary_key=True, default_factory=generate_alphanumerical_id)
+    receipt_id: Mapped[str] = mapped_column(ForeignKey("receipts.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(200))
+    price: Mapped[Decimal] = mapped_column(DECIMAL(2))
+    quantity: Mapped[int] = mapped_column(Integer)
+
+    receipt: Mapped[Receipt] = relationship(
+        "Receipt",
+        back_populates="items",
+    )
+
+    @property
+    def total(self) -> Decimal:
+        return self.price * self.quantity
