@@ -3,7 +3,15 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DATETIME, DECIMAL, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    DATETIME,
+    DECIMAL,
+    Boolean,
+    Enum,
+    Float,
+    ForeignKey,
+    String,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from src.core.utils import generate_alphanumerical_id
@@ -161,8 +169,8 @@ class Receipt(Base):
         default_factory=generate_alphanumerical_id,
     )
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    payment_type: Mapped[str] = mapped_column(Enum("cash", "cashless"))
-    payment_amount: Mapped[Decimal] = mapped_column(DECIMAL(2))
+    is_cashless_payment: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    payment_amount: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
 
     creation_date: Mapped[datetime] = mapped_column(
         DATETIME, default_factory=datetime.now
@@ -175,11 +183,13 @@ class Receipt(Base):
     )
 
     @property
-    def total(self) -> Decimal:
-        return sum(item.total for item in self.items)
+    def total(self) -> FormattedDecimal:
+        return FormattedDecimal(sum(item.total for item in self.items))
 
     @property
-    def rest(self) -> Decimal:
+    def rest(self) -> FormattedDecimal:
+        if self.is_cashless_payment:
+            return FormattedDecimal(0)
         return self.payment_amount - self.total
 
 
@@ -194,8 +204,8 @@ class ReceiptItems(Base):
         ForeignKey("receipts.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(200))
-    price: Mapped[Decimal] = mapped_column(DECIMAL(2))
-    quantity: Mapped[int] = mapped_column(Integer)
+    price: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
+    quantity: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
 
     receipt: Mapped[Receipt] = relationship(
         "Receipt",
@@ -203,5 +213,5 @@ class ReceiptItems(Base):
     )
 
     @property
-    def total(self) -> Decimal:
+    def total(self) -> FormattedDecimal:
         return self.price * self.quantity
