@@ -81,6 +81,7 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(12), primary_key=True)
     login: Mapped[str] = mapped_column(String(50), unique=True)
     email: Mapped[str] = mapped_column(String(255), unique=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255))
 
     roles: Mapped[list[Role]] = relationship(
@@ -164,14 +165,17 @@ class Receipt(Base):
     is_cashless_payment: Mapped[bool] = mapped_column(Boolean, nullable=False)
     payment_amount: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
 
-    creation_date: Mapped[datetime] = mapped_column(
-        DATETIME, default=datetime.now
-    )
+    creation_date: Mapped[datetime] = mapped_column(DATETIME, default=datetime.now)
 
     items: Mapped[list[ReceiptItems]] = relationship(
         "ReceiptItems",
         back_populates="receipt",
         cascade="all, delete-orphan",
+    )
+
+    user: Mapped[User] = relationship(
+        "User",
+        back_populates="receipts",
     )
 
     @property
