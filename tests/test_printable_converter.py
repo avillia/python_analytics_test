@@ -1,17 +1,15 @@
 from datetime import datetime
-from decimal import Decimal
 
 from assertpy import assert_that
 
-from src.core.handlers.receipts.printables import PrintableConverter
+from src.core.handlers.receipts.printables import build_str_repr_of_receipt
 
-RECEIPT_FROM_REQUIREMENTS = """
-      ФОП Джонсонюк Борис       
+RECEIPT_FROM_REQUIREMENTS = """      ФОП Джонсонюк Борис       
 ================================
 3.00 x 298 870.00
 Mavic 3T              896 610.00
 --------------------------------
-20.00 х 31 000.00
+20.00 x 31 000.00
 Дрон FPV з акумулятором
 6S чорний             620 000.00
 ================================
@@ -20,9 +18,7 @@ Mavic 3T              896 610.00
 Решта                       0.00
 ================================
         14.08.2023 14:42        
-      Дякуємо за покупку!       
-
-"""
+      Дякуємо за покупку!       """
 
 
 def test_receipt_from_requirements():
@@ -31,26 +27,26 @@ def test_receipt_from_requirements():
         "items": [
             {
                 "name": "Mavic 3T",
-                "price": Decimal("298870.00"),
-                "quantity": Decimal("3"),
-                "total": Decimal("896610.00"),
+                "price": "298 870.00",
+                "quantity": "3.00",
+                "total": "896 610.00",
             },
             {
                 "name": "Дрон FPV з акумулятором 6S чорний",
-                "price": Decimal("31000.00"),
-                "quantity": Decimal("20"),
-                "total": Decimal("620000.00"),
+                "price": "31 000.00",
+                "quantity": "20.00",
+                "total": "620 000.00",
             },
         ],
-        "total": Decimal("1516610.00"),
+        "total": "1 516 610.00",
         "payment": {
-            "type": "cashless",
-            "amount": Decimal("1516610.00"),
+            "cash": False,
+            "amount": "1 516 610.00",
         },
-        "rest": Decimal("0.00"),
+        "rest": "0.00",
         "created_at": datetime(2023, 8, 14, 14, 42),
     }
 
-    result = PrintableConverter().convert_receipt(**receipt_data)
+    freshly_generated_str_receipt = build_str_repr_of_receipt(receipt_data, width=32)
 
-    assert_that(result).is_equal_to(RECEIPT_FROM_REQUIREMENTS)
+    assert_that(freshly_generated_str_receipt).is_equal_to(RECEIPT_FROM_REQUIREMENTS)
