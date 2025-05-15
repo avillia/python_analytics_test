@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import count
@@ -8,6 +10,8 @@ from src.core.db.models import (
     AppConfig,
     Base,
     Product,
+    Receipt,
+    ReceiptItems,
     Role,
     Tag,
     User,
@@ -220,3 +224,32 @@ class AccessManager(BaseManager):
         self.session.add(access)
         self.session.commit()
         return new_id
+
+
+class ReceiptManager(BaseManager):
+    def create_receipt(
+        self,
+        user_id: str,
+        items: list[dict],
+        is_cashless_payment: bool,
+        payment_amount: Decimal,
+    ) -> Receipt:
+        receipt = Receipt(
+            user_id=user_id,
+            is_cashless_payment=is_cashless_payment,
+            payment_amount=payment_amount,
+        )
+        self.session.add(receipt)
+        self.session.flush()
+
+        for item in items:
+            receipt_item = ReceiptItems(
+                receipt_id=receipt.id,
+                name=item["name"],
+                price=item["price"],
+                quantity=item["quantity"],
+            )
+            self.session.add(receipt_item)
+
+        self.session.commit()
+        return receipt
