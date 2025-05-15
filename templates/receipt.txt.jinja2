@@ -1,0 +1,26 @@
+{{ issuer.center(width) }}
+{{ delimiter * width }}
+{% for item in items %}
+{{ (item["quantity"] ~ " x " ~ item["price"]) }}
+  {% set wrapped = item["name"] | wordwrap(width - item["total"]|length + 1, break_long_words=True, wrapstring="\n") %}
+  {% set lines = wrapped.split("\n") %}
+  {% for line in lines %}
+    {% if loop.last %}
+{{ line }}{{ item["total"].rjust(width - line|length) }}
+    {% else %}
+{{ line }}
+    {% endif %}
+  {% endfor %}
+  {% if not loop.last %}
+{{ separator * width }}
+  {% else %}
+{{ delimiter * width }}
+  {% endif %}
+{% endfor %}
+{{ total_label }}{{ total.rjust(width - total_label|length) }}
+{% set pay_label = cash_label if payment["type"] == "cash" else cashless_label %}
+{{ pay_label }}{{ payment["amount"].rjust(width - pay_label|length) }}
+{{ rest_label }}{{ rest.rjust(width - rest_label|length) }}
+{{ delimiter * width }}
+{{ created_at.strftime(datetime_format).center(width) }}
+{{ thank_you_note.center(width) }}
