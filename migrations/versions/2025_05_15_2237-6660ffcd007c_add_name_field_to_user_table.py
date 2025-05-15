@@ -5,17 +5,17 @@ Revises: 95a80675abde
 Create Date: 2025-05-15 22:37:00.807403
 
 """
+
 from typing import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision:      str = "6660ffcd007c"
+revision: str = "6660ffcd007c"
 down_revision: str | None = "95a80675abde"
 branch_labels: str | Sequence[str] | None = None
-depends_on:    str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
