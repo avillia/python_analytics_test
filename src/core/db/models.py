@@ -9,6 +9,10 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from src.core.utils import generate_alphanumerical_id
 
 
+class FormattedDecimal(Decimal):
+    def __str__(self):
+        return f"{self:,.2f}".replace(",", " ")
+
 class Base(DeclarativeBase):
     pass
 
