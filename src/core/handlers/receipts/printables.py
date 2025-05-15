@@ -1,5 +1,5 @@
-from pathlib import Path
 from json import load as read_json_from
+from pathlib import Path
 from typing import Union
 
 from jinja2 import Environment, FileSystemLoader, Template, select_autoescape
@@ -12,11 +12,7 @@ def generate_template_configs_using(
     config_path: PathOrStr | None = None,
 ) -> dict[str, str | int]:
     if config_path is None:
-        config_path = (
-            Path(__file__).resolve().parents[4]
-            / "templates"
-            / "receipt.json"
-        )
+        config_path = Path(__file__).resolve().parents[4] / "templates" / "receipt.json"
 
     with open(config_path, "r", encoding="utf-8") as file:
         config = read_json_from(file)
@@ -28,9 +24,7 @@ def generate_template_configs_using(
 def load_template_from(template_path: PathOrStr | None) -> Template:
     if template_path is None:
         template_path = (
-                Path(__file__).resolve().parents[4]
-                / "templates"
-                / "receipt.txt.jinja2"
+            Path(__file__).resolve().parents[4] / "templates" / "receipt.txt.jinja2"
         )
     template_path = Path(template_path)
 

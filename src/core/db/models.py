@@ -13,6 +13,7 @@ class FormattedDecimal(Decimal):
     def __str__(self):
         return f"{self:,.2f}".replace(",", " ")
 
+
 class Base(DeclarativeBase):
     pass
 
