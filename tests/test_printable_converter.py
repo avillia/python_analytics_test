@@ -2,7 +2,7 @@ from datetime import datetime
 
 from assertpy import assert_that
 
-from src.core.handlers.receipts.printables import build_str_repr_of_receipt
+from src.core.handlers.receipts.rendering import build_str_repr_of_receipt
 
 RECEIPT_FROM_REQUIREMENTS = """      ФОП Джонсонюк Борис       
 ================================
@@ -47,6 +47,21 @@ def test_receipt_from_requirements():
         "created_at": datetime(2023, 8, 14, 14, 42),
     }
 
-    freshly_generated_str_receipt = build_str_repr_of_receipt(receipt_data, width=32)
+    config = {
+        "delimiter": "=",
+        "separator": "-",
+        "thank_you_note": "Дякуємо за покупку!",
+        "cash_label": "Готівка",
+        "cashless_label": "Картка",
+        "total_label": "СУМА",
+        "rest_label": "Решта",
+        "datetime_format": "%d.%m.%Y %H:%M",
+        "width": 32,
+    }
+
+    freshly_generated_str_receipt = build_str_repr_of_receipt(
+        receipt_data,
+        formatting_config=config,
+    )
 
     assert_that(freshly_generated_str_receipt).is_equal_to(RECEIPT_FROM_REQUIREMENTS)

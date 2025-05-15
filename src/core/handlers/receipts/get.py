@@ -1,0 +1,22 @@
+from src.core.db.managers import DBAppConfigManager, ReceiptManager
+from src.core.db.models import Receipt
+from src.core.handlers.receipts.rendering import build_str_repr_of_receipt
+
+
+def convert_to_dict_repr(receipt_raw_data: Receipt) -> dict: ...
+
+
+def render_as_str_receipt_with(receipt_id: str, width: int) -> str:
+    receipt_raw_data: Receipt | None = ReceiptManager().fetch_specific_by(receipt_id)
+    if receipt_raw_data is None:
+        raise KeyError(f"Receipt(id={receipt_id}) is not found in DB!")
+
+    formatting_config: dict[str, str | int] = (
+        DBAppConfigManager().fetch_receipt_formatting_configs()
+    )
+    formatting_config["width"] = width
+
+    return build_str_repr_of_receipt(
+        convert_to_dict_repr(receipt_raw_data),
+        formatting_config,
+    )

@@ -138,6 +138,28 @@ class DBAppConfigManager(BaseManager):
             raise LookupError(f"No {config=} found!")
         return self.TYPE_MAPPING[raw_config_from_db.type](raw_config_from_db.value)
 
+    def fetch_named_configs(
+        self, keys: list[str]
+    ) -> dict[str, str | int | bool | float]:
+        rows = self.session.scalars(
+            select(AppConfig).where(AppConfig.key.in_(keys))
+        ).all()
+
+        return {cfg.key: self.TYPE_MAPPING[cfg.type](cfg.value) for cfg in rows}
+
+    def fetch_receipt_formatting_configs(self) -> dict[str, str]:
+        receipt_keys = [
+            "delimiter",
+            "separator",
+            "thank_you_note",
+            "cash_label",
+            "cashless_label",
+            "total_label",
+            "rest_label",
+            "datetime_format",
+        ]
+        return self.fetch_named_configs(receipt_keys)
+
 
 class UserManager(BaseManager):
     model = User
