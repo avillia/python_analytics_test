@@ -1,15 +1,12 @@
 from json import load as read_json_from
 from pathlib import Path
-from typing import Union
 
 from jinja2 import Environment, FileSystemLoader, Template, select_autoescape
-
-PathOrStr = Union[str, Path]
 
 
 def generate_template_configs_using(
     width: int,
-    config_path: PathOrStr | None = None,
+    config_path: str | Path | None = None,
 ) -> dict[str, str | int]:
     if config_path is None:
         config_path = Path(__file__).resolve().parents[4] / "templates" / "receipt.json"
@@ -21,7 +18,7 @@ def generate_template_configs_using(
     return config
 
 
-def load_template_from(template_path: PathOrStr | None) -> Template:
+def load_template_from(template_path: str | Path | None = None) -> Template:
     if template_path is None:
         template_path = (
             Path(__file__).resolve().parents[4] / "templates" / "receipt.txt.jinja2"
@@ -41,8 +38,8 @@ def build_str_repr_of_receipt(
     receipt_data: dict,
     width: int,
     *,
-    config_path: PathOrStr | None = None,
-    template_path: PathOrStr | None = None,
+    config_path: str | Path | None = None,
+    template_path: str | Path | None = None,
 ) -> str:
     config = generate_template_configs_using(width, config_path)
     template = load_template_from(template_path)
