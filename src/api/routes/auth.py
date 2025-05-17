@@ -13,13 +13,14 @@ auth_router = APIRouter(
 )
 
 
-class UserLogin(BaseModel):
+class UserLoginRequest(BaseModel):
     login: str
     password: str
 
 
 class UserSignUp(BaseModel):
     email: EmailStr
+    name: str
     login: str
     password: str
 
@@ -40,20 +41,24 @@ async def login(credentials: UserLogin) -> dict:
             "token_type": "bearer",
         }
     except KeyError:
-        raise HTTPException(status_code=401, detail=f"Invalid password for {login=}!")
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid password for {credentials.login}!",
+        )
     except LookupError:
         raise HTTPException(
             status_code=401,
-            detail=f"Invalid username: no user with such {login=} exists!",
+            detail=f"Invalid username: no user with such login [{credentials.login}] exists!",
         )
 
 
-@auth_router.post("/", status_code=201)
+@auth_router.post("/signup", status_code=201)
 async def signup(credentials: UserSignUp) -> dict:
     try:
         create_new_user_with_following(
             credentials.login,
             credentials.email,
+            credentials.name,
             credentials.password,
         )
         return {"status": "success", "login_url": auth_router.url_path_for("login")}
@@ -64,7 +69,7 @@ async def signup(credentials: UserSignUp) -> dict:
         )
 
 
-@auth_router.patch("/")
+@auth_router.patch("/add_role")
 async def assign_role(new_role_request: AssignRoleRequest) -> dict:
     if assign_existing_role_with(new_role_request.role_name, to=new_role_request.login):
         return {

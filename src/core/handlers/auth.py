@@ -52,13 +52,12 @@ def retrieve_data_depending_on(
 def generate_jwt_token_for(user_id: str, accesses: list[str]) -> str:
     config = DBAppConfigManager()
     expire = datetime.now() + timedelta(minutes=config["ACCESS_TOKEN_EXPIRE_MINUTES"])
-    payload = {
-        "sub": user_id,
-        "exp": expire,
-        "access": accesses,
-    }
 
-    token = encode(payload, key=JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    token = encode(
+        payload={"sub": user_id, "exp": expire},
+        key=JWT_SECRET_KEY,
+        algorithm=JWT_ALGORITHM,
+    )
     return token
 
 
@@ -74,7 +73,12 @@ def grant_all_the_accesses_for(new_user_id: str):
     AccessManager().grant_unlimited_access_to(admin_role_id)
 
 
-def create_new_user_with_following(login: str, email: str, plain_password: str):
+def create_new_user_with_following(
+    login: str,
+    email: str,
+    name: str,
+    plain_password: str,
+):
     user_manager = UserManager()
     is_user_already_exists = user_manager.lookup_for_user_by(login)
     if is_user_already_exists:
@@ -82,7 +86,7 @@ def create_new_user_with_following(login: str, email: str, plain_password: str):
 
     new_user_id = generate_alphanumerical_id()
     password_hash = hash_password(plain_password, new_user_id)
-    user_manager.create_new_user_using(new_user_id, login, email, password_hash)
+    user_manager.create_new_user_using(new_user_id, login, name, email, password_hash)
 
     is_first_user_ever = user_manager.fetch_total_user_count() < 0
     if is_first_user_ever:
