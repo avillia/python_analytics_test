@@ -3,8 +3,11 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import List, Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+
+from src.api.security import authorize_request
+from src.core.handlers.receipts.get import render_as_str_receipt_with
 
 receipt_router = APIRouter(
     prefix="/receipts",
@@ -83,8 +86,18 @@ async def fetch_own_receipts(
 async def fetch_receipt_by_id(receipt_id: str) -> ReceiptResponse: ...
 
 
-@receipt_router.get("/{receipt_id}/text", response_model=str)
+@receipt_router.get("/{receipt_id}/text", response_model=dict)
 async def fetch_receipt_as_text(
     receipt_id: str,
-    chars_per_line: Optional[int] = Query(40, ge=10, le=100),
-) -> str: ...
+    chars_per_line: Optional[int] = Query(32, ge=20, le=100),
+) -> dict[str, str]:
+    try:
+        return {
+            "receipt_id": receipt_id,
+            "receipt": render_as_str_receipt_with(receipt_id, chars_per_line),
+        }
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No receipt for id={receipt_id} found in db!",
+        )
