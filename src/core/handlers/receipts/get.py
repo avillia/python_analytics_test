@@ -1,4 +1,4 @@
-from src.core.db.managers import DBAppConfigManager, ReceiptManager
+from src.core.db.managers import DBAppConfigManager, ReceiptCacheManager, ReceiptManager
 from src.core.db.models import Receipt
 from src.core.handlers.receipts.rendering import build_str_repr_of_receipt
 
@@ -41,7 +41,18 @@ def render_as_str_receipt_with(receipt_id: str, width: int) -> str:
     )
     formatting_config["width"] = width
 
-    return build_str_repr_of_receipt(
+    config_string: str = ":".join(formatting_config.values())
+
+    cache = ReceiptCacheManager()
+
+    cached_txt = cache.fetch_cache_for(receipt_id, config_string)
+    if cached_txt:
+        return cached_txt
+
+    rendered_receipt = build_str_repr_of_receipt(
         convert_to_dict_repr(receipt_raw_data),
         formatting_config,
     )
+    cache.create_new_entry_with(receipt_id, config_string, rendered_receipt)
+
+    return rendered_receipt

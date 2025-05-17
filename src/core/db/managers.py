@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.functions import count
+from sqlalchemy.sql.functions import count, func
 
 from src.core.db.base import create_session
 from src.core.db.models import (
@@ -14,6 +14,7 @@ from src.core.db.models import (
     ReceiptItems,
     Role,
     Tag,
+    TxtReceiptCache,
     User,
     UsersRoles,
 )
@@ -169,10 +170,7 @@ class UserManager(BaseManager):
 
     def gather_all_accesses_for(self, user_id: str) -> list[Access]:
         stmt = (
-            select(Access)
-            .join(Access.role)
-            .join(Access.role.users)
-            .where(User.id == user_id)
+            select(Access).join(Access.role).join(Role.users).where(User.id == user_id)
         )
         return self.session.scalars(stmt).all()
 
@@ -184,12 +182,14 @@ class UserManager(BaseManager):
         self,
         new_user_id: str,
         login: str,
+        name: str,
         email: str,
         password_hash: str,
     ) -> User:
         user = User(
             id=new_user_id,
             login=login,
+            name=name,
             email=email,
             password_hash=password_hash,
         )
@@ -275,3 +275,37 @@ class ReceiptManager(BaseManager):
 
         self.session.commit()
         return receipt
+
+    def fetch_all_for_specific_user_with(self, user_id: str) -> list[Receipt]:
+        return self.session.scalars(
+            select(Receipt).where(Receipt.user_id == user_id)
+        ).all()
+
+
+class ReceiptCacheManager(BaseManager):
+    model = TxtReceiptCache
+
+    def fetch_cache_for(self, receipt_id: str, config_str: str) -> str | None:
+        cache_row = self.session.scalar(
+            select(self.model).where(
+                self.model.receipt_id == receipt_id, self.model.config_str == config_str
+            )
+        )
+        return cache_row.txt if cache_row else None
+
+    def create_new_entry_with(self, receipt_id: str, config_str: str, txt: str) -> None:
+        total = self.session.scalar(select(func.count()).select_from(self.model))
+
+        if total >= 10:
+            oldest = self.session.scalars(
+                select(self.model).order_by(self.model.creation_date.asc())
+            )
+            self.session.delete(oldest)
+
+        new_cache_entry = TxtReceiptCache(
+            receipt_id=receipt_id,
+            config_str=config_str,
+            txt=txt,
+        )
+        self.session.add(new_cache_entry)
+        self.session.commit()

@@ -3,8 +3,17 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DATETIME, DECIMAL, Boolean, Enum, Float, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.sql.sqltypes import (
+    DATETIME,
+    DECIMAL,
+    Boolean,
+    Enum,
+    Float,
+    Integer,
+    String,
+)
 
 from src.core.utils import generate_alphanumerical_id
 
@@ -91,6 +100,12 @@ class User(Base):
         cascade="all, delete",
     )
 
+    receipts: Mapped[list[Receipt]] = relationship(
+        "Receipt",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self):
         return f"<User(login={self.login!r}, email={self.email!r})>"
 
@@ -153,14 +168,14 @@ class Access(Base):
             f"'{self.allowed_method}@{self.route_url}')>"
         )
 
+    def __str__(self):
+        return f"{self.allowed_method}@{self.route_url}"
+
 
 class Receipt(Base):
     __tablename__ = "receipts"
 
-    id: Mapped[str] = mapped_column(
-        primary_key=True,
-        default=generate_alphanumerical_id,
-    )
+    id: Mapped[str] = mapped_column(primary_key=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     is_cashless_payment: Mapped[bool] = mapped_column(Boolean, nullable=False)
     payment_amount: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
@@ -211,3 +226,13 @@ class ReceiptItems(Base):
     @property
     def total(self) -> FormattedDecimal:
         return self.price * self.quantity
+
+
+class TxtReceiptCache(Base):
+    receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("receipts.id", ondelete="CASCADE")
+    )
+    config_str: Mapped[str] = mapped_column(String)
+    txt: Mapped[str] = mapped_column(String)
+
+    creation_date: Mapped[datetime] = mapped_column(DATETIME, default=datetime.now)
