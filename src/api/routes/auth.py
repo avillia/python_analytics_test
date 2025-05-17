@@ -30,8 +30,8 @@ class AssignRoleRequest(BaseModel):
     role_name: str
 
 
-@auth_router.get("/")
-async def login(credentials: UserLogin) -> dict:
+@auth_router.post("/login")
+async def login(credentials: UserLoginRequest) -> dict:
     try:
         return {
             "access_token": obtain_jwt_token_for(
