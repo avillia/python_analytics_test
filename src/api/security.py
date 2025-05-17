@@ -4,6 +4,7 @@ from jwt import ExpiredSignatureError, PyJWTError, decode
 from starlette.datastructures import URL
 
 from config import JWT_ALGORITHM, JWT_SECRET_KEY
+from src.core.db.managers import UserManager
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -58,19 +59,18 @@ def build_set_of_permissions_required_to_perform(
     }
 
 
-def extract_accesses_from(payload: dict[str, list[str]]) -> set[str]:
-    return set(payload.pop("access", []))
+def extract_accesses_for(user_id: str) -> set[str]:
+    return {str(access) for access in UserManager().gather_all_accesses_for(user_id)}
 
 
 def is_possible_to_perform_request_based_on(
     method: str,
     path_segment: str,
-    payload: dict,
+    accesses: set[str],
 ):
     required_permissions = build_set_of_permissions_required_to_perform(
         method, at=path_segment
     )
-    accesses = extract_accesses_from(payload)
 
     # I hope this part confuses no one, but in case it does:
     # Here I check whether intersection of two sets
@@ -86,7 +86,7 @@ def is_possible_to_perform_request_based_on(
 async def authorize_request(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-) -> dict:
+) -> str:
     token = extract_token_from(credentials)
     if token is None:
         raise HTTPException(
@@ -96,10 +96,13 @@ async def authorize_request(
         )
 
     payload = extract_payload_from(token)
+    user_id = payload["sub"]
+    user_accesses = extract_accesses_for(user_id)
+
     method, path_segment = extract_info_about_current(request)
 
-    if is_possible_to_perform_request_based_on(method, path_segment, payload):
-        return payload
+    if is_possible_to_perform_request_based_on(method, path_segment, user_accesses):
+        return user_id
 
     raise HTTPException(
         status_code=403,
