@@ -1,13 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from src.api.security import authorize_request
-from src.core.handlers.receipts.get import render_as_str_receipt_with
+from src.api.security import requires_authorization
+from src.core.handlers.receipts.get import (
+    render_as_str_receipt_with,
+    retrieve_if_is_possible_to_look_data_for,
+)
 
 receipt_router = APIRouter(
     prefix="/receipts",
@@ -16,45 +18,49 @@ receipt_router = APIRouter(
 )
 
 
+class ReceiptResponse(BaseModel):
+    class Config:
+        from_attributes = True
+
+
 class PaymentType(StrEnum):
     cash = "cash"
     cashless = "cashless"
 
 
-class ProductItem(BaseModel):
+class ProductItem(ReceiptResponse):
     name: str
     price: Decimal
     quantity: Decimal
 
 
-class PaymentInfo(BaseModel):
+class PaymentInfo(ReceiptResponse):
     type: PaymentType
     amount: Decimal
-    additional_info: Optional[str] = None
 
 
 class ReceiptCreate(BaseModel):
-    products: List[ProductItem]
+    products: list[ProductItem]
     payment: PaymentInfo
 
 
-class ProductItemResponse(ProductItem):
+class ProductItemResponse(ReceiptResponse):
     total: Decimal
 
 
 class PaymentInfoResponse(PaymentInfo): ...
 
 
-class ReceiptResponse(BaseModel):
+class ReceiptGetResponse(ReceiptResponse):
     id: str
-    products: List[ProductItemResponse]
+    products: list[ProductItemResponse]
     payment: PaymentInfoResponse
     total: Decimal
     rest: Decimal
     created_at: datetime
 
 
-class ReceiptListItem(BaseModel):
+class ReceiptListItem(ReceiptResponse):
     id: str
     total: Decimal
     payment_type: PaymentType
@@ -63,7 +69,7 @@ class ReceiptListItem(BaseModel):
 
 class ReceiptCollection(BaseModel):
     count: int
-    receipts: List[ReceiptListItem]
+    receipts: list[ReceiptListItem]
 
 
 @receipt_router.post("/", response_model=ReceiptResponse, status_code=201)
@@ -72,11 +78,12 @@ async def create_receipt(receipt_data: ReceiptCreate) -> ReceiptResponse: ...
 
 @receipt_router.get("/", response_model=ReceiptCollection)
 async def fetch_own_receipts(
-    created_after: Optional[datetime] = Query(None),
-    created_before: Optional[datetime] = Query(None),
-    min_total: Optional[Decimal] = Query(None),
-    max_total: Optional[Decimal] = Query(None),
-    payment_type: Optional[PaymentType] = Query(None),
+    user_id: requires_authorization,
+    created_after: datetime | None = Query(None),
+    created_before: datetime | None = Query(None),
+    min_total: Decimal | None = Query(None),
+    max_total: Decimal | None = Query(None),
+    payment_type: PaymentType | None = Query(None),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ) -> ReceiptCollection: ...
@@ -89,7 +96,7 @@ async def fetch_receipt_by_id(receipt_id: str) -> ReceiptResponse: ...
 @receipt_router.get("/{receipt_id}/text", response_model=dict)
 async def fetch_receipt_as_text(
     receipt_id: str,
-    chars_per_line: Optional[int] = Query(32, ge=20, le=100),
+    chars_per_line: int | None = Query(32, ge=20, le=100),
 ) -> dict[str, str]:
     try:
         return {
