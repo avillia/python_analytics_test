@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 
+from src.api.security import requires_authorization
 from src.core.handlers.auth import (
     assign_existing_role_with,
     create_new_user_with_following,
@@ -70,7 +71,10 @@ async def signup(credentials: UserSignUp) -> dict:
 
 
 @auth_router.patch("/add_role")
-async def assign_role(new_role_request: AssignRoleRequest) -> dict:
+async def assign_role(
+    _: requires_authorization,
+    new_role_request: AssignRoleRequest,
+) -> dict:
     if assign_existing_role_with(new_role_request.role_name, to=new_role_request.login):
         return {
             "status": "success",

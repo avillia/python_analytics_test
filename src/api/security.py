@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import ExpiredSignatureError, PyJWTError, decode
@@ -109,3 +111,6 @@ async def authorize_request(
         detail=f"Not enough permissions. "
         f"You need to be able to make '{method}@{path_segment}' to access this resource!",
     )
+
+
+requires_authorization = Annotated[str, Depends(authorize_request)]
