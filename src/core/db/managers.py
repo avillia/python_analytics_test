@@ -299,7 +299,7 @@ class ReceiptCacheManager(BaseManager):
         if total >= 10:
             oldest = self.session.scalars(
                 select(self.model).order_by(self.model.creation_date.asc())
-            )
+            ).first()
             self.session.delete(oldest)
 
         new_cache_entry = TxtReceiptCache(

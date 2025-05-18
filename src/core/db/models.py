@@ -229,8 +229,10 @@ class ReceiptItems(Base):
 
 
 class TxtReceiptCache(Base):
+    __tablename__ = "txt_receipt_cache"
+
     receipt_id: Mapped[str] = mapped_column(
-        ForeignKey("receipts.id", ondelete="CASCADE")
+        ForeignKey("receipts.id", ondelete="CASCADE"), primary_key=True
     )
     config_str: Mapped[str] = mapped_column(String)
     txt: Mapped[str] = mapped_column(String)
