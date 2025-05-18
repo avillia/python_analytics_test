@@ -22,16 +22,10 @@ def upgrade() -> None:
     op.create_table(
         "txt_receipt_cache",
         sa.Column(
-            "id",
-            sa.String(length=255),
-            primary_key=True,
-            nullable=False,
-        ),
-        sa.Column(
             "receipt_id",
             sa.String(length=255),
             sa.ForeignKey("receipts.id", ondelete="CASCADE"),
-            nullable=False,
+            primary_key=True,
         ),
         sa.Column(
             "config_str",
