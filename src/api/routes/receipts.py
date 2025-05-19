@@ -12,6 +12,7 @@ from src.core.handlers.receipts.get import (
     retrieve_if_is_possible_to_look_data_for,
     retrieve_user_receipts_data,
 )
+from src.core.handlers.receipts.post import store_receipt_by
 
 receipt_router = APIRouter(
     prefix="/receipts",
@@ -74,8 +75,13 @@ class ReceiptCollection(BaseModel):
     total: int
 
 
-@receipt_router.post("/", response_model=ReceiptResponse, status_code=201)
-async def create_receipt(receipt_data: ReceiptCreate) -> ReceiptResponse: ...
+@receipt_router.post("/", response_model=SingleReceiptResponse, status_code=201)
+async def create_receipt(
+    user_id: requires_authorization,
+    receipt_data: ReceiptCreate,
+) -> SingleReceiptResponse:
+    fresh_receipt = store_receipt_by(receipt_data, user_id)
+    return SingleReceiptResponse.model_validate(convert_to_dict_repr(fresh_receipt))
 
 
 @receipt_router.get("/", response_model=ReceiptCollection)
