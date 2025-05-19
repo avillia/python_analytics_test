@@ -1,12 +1,10 @@
-from _pytest.fixtures import fixture
 from fastapi.testclient import TestClient
 from pytest import fixture
 
 from main import app
 from src.core.db.base import Base
 from src.core.db.base import engine as test_engine
-from src.core.db.managers import ReceiptManager, UserManager
-from src.core.utils import generate_alphanumerical_id
+from src.core.db.managers import ReceiptManager, UserManager, DBAppConfigManager
 
 
 @fixture(scope="session", autouse=True)
@@ -24,8 +22,9 @@ def test_client():
 
 @fixture(scope="package")
 def user():
-    user_id = generate_alphanumerical_id()
-    UserManager().create_new_user_using(
+    user_id = "testUser2000"
+    if not UserManager().fetch_specific_by(user_id):
+        UserManager().create_new_user_using(
         new_user_id=user_id,
         login="test_user",
         name="Illia Avdiienko",
@@ -39,14 +38,15 @@ def user():
 
 @fixture(scope="package")
 def another_user():
-    user_id = generate_alphanumerical_id()
-    UserManager().create_new_user_using(
-        new_user_id=user_id,
-        login="another_user",
-        name="Danylo Avdiienko",
-        email="another@example.com",
-        password_hash="hash",
-    )
+    user_id = "testUser2006"
+    if not UserManager().fetch_specific_by(user_id):
+        UserManager().create_new_user_using(
+            new_user_id=user_id,
+            login="another_user",
+            name="Danylo Avdiienko",
+            email="another@example.com",
+            password_hash="hash",
+        )
     yield user_id
 
     UserManager().delete(user_id)
@@ -70,3 +70,21 @@ def receipt(user):
     yield receipt.id
 
     ReceiptManager().delete(receipt.id)
+
+
+@fixture(scope="function")
+def setup_receipt_render_config():
+    configs = DBAppConfigManager()
+
+    configs["delimiter"] = "="
+    configs["separator"] = "-"
+    configs["thank_you_note"] = "Дякуємо за покупку!"
+    configs["rest_label"] = "Решта"
+    configs["cash_label"] = "Готівка"
+    configs["cashless_label"] = "Картка"
+    configs["total_label"] = "СУМА"
+    configs["timeout"] = 60
+    configs["flag_enabled"] = True
+    configs["datetime_format"] = "%d.%m.%Y %H:%M"
+
+    yield

@@ -1,5 +1,5 @@
 from assertpy import assert_that
-from pytest import fixture, raises
+from pytest import raises
 
 from src.core.db.managers import DBAppConfigManager, ReceiptCacheManager
 from src.core.handlers.receipts.get import (
@@ -7,25 +7,6 @@ from src.core.handlers.receipts.get import (
     retrieve_if_is_possible_to_look_data_for,
 )
 from tests.conftest import receipt, user
-
-
-@fixture(scope="function")
-def setup_receipt_render_config():
-    DBAppConfigManager().create_a_lot_of_new(
-        {
-            "delimiter": ("=", str),
-            "separator": ("-", str),
-            "thank_you_note": ("Дякуємо за покупку!", str),
-            "rest_label": ("Решта", str),
-            "cash_label": ("Готівка", str),
-            "cashless_label": ("Картка", str),
-            "total_label": ("СУМА", str),
-            "timeout": (60, int),
-            "flag_enabled": (True, bool),
-            "datetime_format": ("%d.%m.%Y %H:%M", str),
-        }
-    )
-    yield
 
 
 def test_render_as_str_receipt_with_success(receipt, setup_receipt_render_config):
