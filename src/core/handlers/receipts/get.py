@@ -19,13 +19,14 @@ def convert_to_dict_repr(receipt_raw_data: Receipt) -> dict[str, str]:
             }
         )
 
-    payment_type = "cashless" if receipt_raw_data.is_cashless_payment else "cash"
     payment = {
-        "type": payment_type,
+        "is_cashless_payment": receipt_raw_data.is_cashless_payment,
+        "type": "cashless" if receipt_raw_data.is_cashless_payment else "cash",
         "amount": str(receipt_raw_data.payment_amount),
     }
 
     return {
+        "id": receipt_raw_data.id,
         "issuer": receipt_raw_data.user.name,
         "items": items,
         "total": str(receipt_raw_data.total),
@@ -63,3 +64,42 @@ def render_as_str_receipt_with(receipt_id: str, width: int) -> str:
     cache.create_new_entry_with(receipt_id, config_string, rendered_receipt)
 
     return rendered_receipt
+
+
+def retrieve_if_is_possible_to_look_data_for(receipt_id: str, using: str) -> dict:
+    requester_user_id = using
+    receipt_manager = ReceiptManager()
+
+    receipt: Receipt | None = receipt_manager.fetch_specific_by(receipt_id)
+    if receipt is None:
+        raise KeyError(f"Receipt with {receipt_id=} is not found!")
+    if receipt.user_id != requester_user_id:
+        raise AssertionError("Not possible to access this data.")
+    return convert_to_dict_repr(receipt)
+
+
+def retrieve_user_receipts_data(filters: dict) -> tuple[int, list[dict]]:
+    """
+    filters may contain:
+      - user_id: str
+      - created_after: datetime
+      - created_before: datetime
+      - min_total: Decimal
+      - max_total: Decimal
+      - payment_type: bool         (cashless=True, cash=False)
+      - limit: int
+      - offset: int
+    """
+
+    user_id = filters.pop("user_id")
+    limit   = filters.pop("limit")
+    offset  = filters.pop("offset")
+
+    total, receipts = ReceiptManager().filter_and_paginate_using(
+        user_id,
+        limit,
+        offset,
+        filters,
+    )
+
+    return total, [convert_to_dict_repr(raw_receipt) for raw_receipt in receipts]

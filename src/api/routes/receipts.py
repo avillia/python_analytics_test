@@ -7,8 +7,10 @@ from pydantic import BaseModel
 
 from src.api.security import requires_authorization
 from src.core.handlers.receipts.get import (
+    convert_to_dict_repr,
     render_as_str_receipt_with,
     retrieve_if_is_possible_to_look_data_for,
+    retrieve_user_receipts_data,
 )
 
 receipt_router = APIRouter(
@@ -35,7 +37,7 @@ class ProductItem(ReceiptResponse):
 
 
 class PaymentInfo(ReceiptResponse):
-    type: PaymentType
+    is_cashless_payment: bool
     amount: Decimal
 
 
@@ -51,25 +53,25 @@ class ProductItemResponse(ReceiptResponse):
 class PaymentInfoResponse(PaymentInfo): ...
 
 
-class ReceiptGetResponse(ReceiptResponse):
+class SingleReceiptResponse(ReceiptResponse):
     id: str
-    products: list[ProductItemResponse]
+    items: list[ProductItemResponse]
     payment: PaymentInfoResponse
     total: Decimal
     rest: Decimal
     created_at: datetime
 
 
-class ReceiptListItem(ReceiptResponse):
-    id: str
-    total: Decimal
-    payment_type: PaymentType
-    created_at: datetime
+class Pagination(BaseModel):
+    starting: int
+    ending: int
+    count: int
 
 
 class ReceiptCollection(BaseModel):
-    count: int
-    receipts: list[ReceiptListItem]
+    pagination: Pagination
+    receipts: list[SingleReceiptResponse]
+    total: int
 
 
 @receipt_router.post("/", response_model=ReceiptResponse, status_code=201)
@@ -83,14 +85,59 @@ async def fetch_own_receipts(
     created_before: datetime | None = Query(None),
     min_total: Decimal | None = Query(None),
     max_total: Decimal | None = Query(None),
-    payment_type: PaymentType | None = Query(None),
+    is_cashless_operation: bool | None = Query(None),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
-) -> ReceiptCollection: ...
+) -> ReceiptCollection:
+
+    optional_filters: dict = {
+        "created_after": created_after,
+        "created_before": created_before,
+        "min_total": min_total,
+        "max_total": max_total,
+        "payment_type": is_cashless_operation,
+    }
+    filters = {k: v for k, v in optional_filters.items() if v is not None}
+
+    filters["user_id"] = user_id
+    filters["limit"] = limit
+    filters["offset"] = offset
+
+    total, receipts = retrieve_user_receipts_data(filters)
+
+    pagination = Pagination(
+        starting=offset,
+        ending=min(offset + limit, total),
+        count=len(receipts),
+    )
+
+    return ReceiptCollection(
+        pagination=pagination,
+        total=total,
+        receipts=[SingleReceiptResponse.model_validate(receipt) for receipt in receipts],
+    )
 
 
-@receipt_router.get("/{receipt_id}", response_model=ReceiptResponse)
-async def fetch_receipt_by_id(receipt_id: str) -> ReceiptResponse: ...
+@receipt_router.get("/{receipt_id}", response_model=SingleReceiptResponse)
+async def fetch_receipt_by_id(
+    user_id: requires_authorization,
+    receipt_id: str,
+) -> SingleReceiptResponse:
+    try:
+        receipt_from_db = retrieve_if_is_possible_to_look_data_for(
+            receipt_id, using=user_id
+        )
+        return SingleReceiptResponse.model_validate(receipt_from_db)
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No receipt for id={receipt_id} found in db!",
+        )
+    except AssertionError:
+        raise HTTPException(
+            status_code=403,
+            detail=f"You have no permission to access sensitive data!",
+        )
 
 
 @receipt_router.get("/{receipt_id}/text", response_model=dict)
