@@ -1,6 +1,5 @@
 from assertpy import assert_that
 from pytest import mark
-
 from src.api.security import is_possible_to_perform_request_based_on
 
 
@@ -77,10 +76,10 @@ def test_request_is_possible(method: str, route: str, accesses: set[str]):
     ),
 )
 def test_request_lacks_required_accesses(
-        method: str,
-        route: str,
-        accesses: set[str],
-    ):
+    method: str,
+    route: str,
+    accesses: set[str],
+):
     assert_that(
         is_possible_to_perform_request_based_on(method, route, accesses)
     ).is_false()
