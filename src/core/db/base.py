@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from config import DATABASE_URL
 
@@ -21,7 +21,7 @@ class FormattedDecimal(Decimal):
         return f"{self:,.2f}".replace(",", " ")
 
 
-from sqlalchemy.types import TypeDecorator, DECIMAL
+from sqlalchemy.types import DECIMAL, TypeDecorator
 
 
 class FormattedDecimalType(TypeDecorator):

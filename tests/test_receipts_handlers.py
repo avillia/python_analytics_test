@@ -1,17 +1,12 @@
 from assertpy import assert_that
 from pytest import fixture, raises
 
-from src.core.db.managers import (
-    DBAppConfigManager,
-    ReceiptCacheManager,
-    ReceiptManager,
-    UserManager,
-)
+from src.core.db.managers import DBAppConfigManager, ReceiptCacheManager
 from src.core.handlers.receipts.get import (
     render_as_str_receipt_with,
     retrieve_if_is_possible_to_look_data_for,
 )
-from src.core.utils import generate_alphanumerical_id
+from tests.conftest import receipt, user
 
 
 @fixture(scope="function")
@@ -31,56 +26,6 @@ def setup_receipt_render_config():
         }
     )
     yield
-
-
-@fixture(scope="function")
-def user():
-    user_id = generate_alphanumerical_id()
-    UserManager().create_new_user_using(
-        new_user_id=user_id,
-        login="test_user",
-        name="Illia Avdiienko",
-        email="test@example.com",
-        password_hash="hash",
-    )
-    yield user_id
-
-    UserManager().delete(user_id)
-
-
-@fixture(scope="function")
-def another_user():
-    user_id = generate_alphanumerical_id()
-    UserManager().create_new_user_using(
-        new_user_id=user_id,
-        login="another_user",
-        name="Danylo Avdiienko",
-        email="another@example.com",
-        password_hash="hash",
-    )
-    yield user_id
-
-    UserManager().delete(user_id)
-
-
-@fixture(scope="function")
-def receipt(user):
-    receipt = ReceiptManager().create_receipt(
-        user_id=user,
-        items=[
-            {
-                "name": "Test Product",
-                "price": "500.00",
-                "quantity": "2.00",
-                "total": "1000.00",
-            }
-        ],
-        is_cashless_payment=True,
-        payment_amount="1000.00",
-    )
-    yield receipt.id
-
-    ReceiptManager().delete(receipt.id)
 
 
 def test_render_as_str_receipt_with_success(receipt, setup_receipt_render_config):
