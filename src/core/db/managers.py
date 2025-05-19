@@ -4,11 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import count, func
 
-from src.core.db.base import create_session
+from src.core.db.base import create_session, Base
 from src.core.db.models import (
     Access,
     AppConfig,
-    Base,
     Product,
     Receipt,
     ReceiptItems,
@@ -139,6 +138,38 @@ class DBAppConfigManager(BaseManager):
             raise LookupError(f"No {config=} found!")
         return self.TYPE_MAPPING[raw_config_from_db.type](raw_config_from_db.value)
 
+    def __setitem__(self, key: str, value: tuple[str | bool | int | float, type]):
+        raw_config_from_db = self.session.scalar(
+            select(self.model).where(AppConfig.key == key)
+        )
+        if raw_config_from_db is not None:
+            raise KeyError(f"{raw_config_from_db} already exists!")
+        new_value, type_of_it = value
+        new_config_entry = AppConfig(
+            key=key, value=str(new_value), type=str(type_of_it)
+        )
+        self.session.add(new_config_entry)
+        self.session.commit()
+
+    def create_a_lot_of_new(
+        self,
+        configs: dict[str, tuple[str | bool | int | float, type | str]],
+    ):
+        """Use only in tests, otherwise it should be updated one by one to ensure granularity."""
+        new_configs: list[AppConfig] = []
+        for config_key, (new_value, type_of_it) in configs.items():
+            new_configs.append(
+                AppConfig(
+                    key=config_key,
+                    value=str(new_value),
+                    type=type_of_it.__name__
+                    if isinstance(type_of_it, type)
+                    else type_of_it,
+                )
+            )
+        self.session.add_all(new_configs)
+        self.session.commit()
+
     def fetch_named_configs(
         self, keys: list[str]
     ) -> dict[str, str | int | bool | float]:
@@ -249,6 +280,8 @@ class AccessManager(BaseManager):
 
 
 class ReceiptManager(BaseManager):
+    model = Receipt
+
     def create_receipt(
         self,
         user_id: str,
