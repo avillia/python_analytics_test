@@ -1,7 +1,8 @@
 from fastapi.testclient import TestClient
 from main import app
 from pytest import fixture
-from src.core.db.base import engine as test_engine, Base
+from src.core.db.base import Base
+from src.core.db.base import engine as test_engine
 
 
 @fixture(scope="session", autouse=True)

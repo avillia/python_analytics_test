@@ -21,7 +21,6 @@ class FormattedDecimal(Decimal):
         return f"{self:,.2f}".replace(",", " ")
 
 
-
 from sqlalchemy.types import TypeDecorator, DECIMAL
 
 
@@ -40,7 +39,6 @@ class FormattedDecimalType(TypeDecorator):
         if value is None:
             return None
         return FormattedDecimal(value)
-
 
 
 class Base(DeclarativeBase):
