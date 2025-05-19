@@ -1,30 +1,19 @@
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal
 
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import (
     DATETIME,
-    DECIMAL,
     Boolean,
     Enum,
     Float,
-    Integer,
     String,
 )
 
+from src.core.db.base import FormattedDecimal, Base, FormattedDecimalType
 from src.core.utils import generate_alphanumerical_id
-
-
-class FormattedDecimal(Decimal):
-    def __str__(self):
-        return f"{self:,.2f}".replace(",", " ")
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class Product(Base):
@@ -175,10 +164,13 @@ class Access(Base):
 class Receipt(Base):
     __tablename__ = "receipts"
 
-    id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(
+        primary_key=True,
+        default=generate_alphanumerical_id,
+    )
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     is_cashless_payment: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    payment_amount: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
+    payment_amount: Mapped[FormattedDecimal] = mapped_column(FormattedDecimalType)
 
     creation_date: Mapped[datetime] = mapped_column(DATETIME, default=datetime.now)
 
@@ -215,8 +207,8 @@ class ReceiptItems(Base):
         ForeignKey("receipts.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(200))
-    price: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
-    quantity: Mapped[FormattedDecimal] = mapped_column(DECIMAL(2))
+    price: Mapped[FormattedDecimal] = mapped_column(FormattedDecimalType)
+    quantity: Mapped[FormattedDecimal] = mapped_column(FormattedDecimalType)
 
     receipt: Mapped[Receipt] = relationship(
         "Receipt",
@@ -232,7 +224,8 @@ class TxtReceiptCache(Base):
     __tablename__ = "txt_receipt_cache"
 
     receipt_id: Mapped[str] = mapped_column(
-        ForeignKey("receipts.id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("receipts.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     config_str: Mapped[str] = mapped_column(String)
     txt: Mapped[str] = mapped_column(String)
