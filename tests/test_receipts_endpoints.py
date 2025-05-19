@@ -29,6 +29,31 @@ def auth_headers(user, set_access_token_timeout) -> dict:
     return {"Authorization": f"Bearer {generate_jwt_token_for(user)}"}
 
 
+def test_list_and_paginate_receipts(test_client: TestClient, user, auth_headers):
+    first_get_response = test_client.get("/receipts/", headers=auth_headers)
+    assert_that(first_get_response.status_code).is_equal_to( 200)
+    listing = first_get_response.json()
+    assert_that(listing["total"]).is_equal_to(0)
+    assert_that(listing["pagination"]["count"]).is_equal_to(0)
+
+    payload = {
+        "products": [{"name": "X", "price": 1.00, "quantity": 1}],
+        "payment": {"is_cashless_payment": False, "amount": 10.00},
+    }
+    test_client.post("/receipts/", json=payload, headers=auth_headers)
+    test_client.post("/receipts/", json=payload, headers=auth_headers)
+    test_client.post("/receipts/", json=payload, headers=auth_headers)
+
+    second_get_response = test_client.get("/receipts/?limit=2&offset=1", headers=auth_headers)
+    assert_that(second_get_response.status_code).is_equal_to(200)
+    page = second_get_response.json()
+    assert_that(page["total"]).is_equal_to(3)
+    assert_that(page["pagination"]["starting"]).is_equal_to(1)
+    assert_that(page["pagination"]["ending"]).is_equal_to(3)
+    assert_that(page["pagination"]["count"]).is_equal_to(2)
+    assert_that(page["receipts"]).is_length(2)
+
+
 def test_create_and_fetch_receipt(test_client: TestClient, user, auth_headers, setup_receipt_render_config,):
     payload = {
         "products": [
@@ -56,31 +81,6 @@ def test_create_and_fetch_receipt(test_client: TestClient, user, auth_headers, s
     txt = txt_get_response.json()
     assert_that(txt["receipt_id"]).is_equal_to(receipt_id)
     assert_that(txt["receipt"]).contains("Item A").contains("Item B")
-
-
-def test_list_and_paginate_receipts(test_client: TestClient, user, auth_headers):
-    first_get_response = test_client.get("/receipts/", headers=auth_headers)
-    assert_that(first_get_response.status_code).is_equal_to( 200)
-    listing = first_get_response.json()
-    assert_that(listing["total"]).is_equal_to(0)
-    assert_that(listing["pagination"]["count"]).is_equal_to(0)
-
-    payload = {
-        "products": [{"name": "X", "price": 1.00, "quantity": 1}],
-        "payment": {"is_cashless_payment": False, "amount": 10.00},
-    }
-    test_client.post("/receipts/", json=payload, headers=auth_headers)
-    test_client.post("/receipts/", json=payload, headers=auth_headers)
-    test_client.post("/receipts/", json=payload, headers=auth_headers)
-
-    second_get_response = test_client.get("/receipts/?limit=2&offset=1", headers=auth_headers)
-    assert_that(second_get_response.status_code).is_equal_to(200)
-    page = second_get_response.json()
-    assert_that(page["total"]).is_equal_to(3)
-    assert_that(page["pagination"]["starting"]).is_equal_to(1)
-    assert_that(page["pagination"]["ending"]).is_equal_to(3)
-    assert_that(page["pagination"]["count"]).is_equal_to(2)
-    assert_that(page["receipts"]).is_length(2)
 
 
 @mark.parametrize("url", ["/receipts/nonexistent", "/receipts/nonexistent/text"])

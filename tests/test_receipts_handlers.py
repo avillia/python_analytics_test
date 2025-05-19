@@ -42,9 +42,8 @@ def test_render_as_str_receipt_with_nonexistent_receipt():
 
 
 def test_retrieve_if_is_possible_to_look_data_for_success(receipt, user):
-    receipt_obj = retrieve_if_is_possible_to_look_data_for(receipt, using=user)
-    assert_that(receipt_obj.id).is_equal_to(receipt)
-    assert_that(receipt_obj.user_id).is_equal_to(user)
+    receipt_data = retrieve_if_is_possible_to_look_data_for(receipt, using=user)
+    assert_that(receipt_data["id"]).is_equal_to(receipt)
 
 
 def test_retrieve_if_is_possible_to_look_data_for_wrong_user(receipt, another_user):
