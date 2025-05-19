@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from assertpy import assert_that
+
 from src.core.handlers.receipts.rendering import build_str_repr_of_receipt
 
 RECEIPT_FROM_REQUIREMENTS = """      ФОП Джонсонюк Борис       

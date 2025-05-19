@@ -1,5 +1,6 @@
 from assertpy import assert_that
 from pytest import fixture, raises
+
 from src.core.db.managers import (
     DBAppConfigManager,
     ReceiptCacheManager,

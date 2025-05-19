@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
-from main import app
 from pytest import fixture
+
+from main import app
 from src.core.db.base import Base
 from src.core.db.base import engine as test_engine
 
