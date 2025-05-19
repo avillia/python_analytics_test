@@ -4,15 +4,9 @@ from datetime import datetime
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql.sqltypes import (
-    DATETIME,
-    Boolean,
-    Enum,
-    Float,
-    String,
-)
+from sqlalchemy.sql.sqltypes import DATETIME, Boolean, Enum, Float, String
 
-from src.core.db.base import FormattedDecimal, Base, FormattedDecimalType
+from src.core.db.base import Base, FormattedDecimal, FormattedDecimalType
 from src.core.utils import generate_alphanumerical_id
 
 

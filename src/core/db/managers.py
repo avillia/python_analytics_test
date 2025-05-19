@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import count, func
 
-from src.core.db.base import create_session, Base
+from src.core.db.base import Base, create_session
 from src.core.db.models import (
     Access,
     AppConfig,
