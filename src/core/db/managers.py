@@ -1,7 +1,7 @@
 from decimal import Decimal
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import select, update, insert
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.functions import count, func
 
 from src.core.db.base import Base, create_session
@@ -226,14 +226,14 @@ class UserManager(BaseManager):
 class RoleManager(BaseManager):
     model = Role
 
-    def ensure_admin_role_exists(self) -> str:
-        stmt = select(Role).where(Role.name == "admin")
+    def ensure_role_exists(self, role_name: str) -> str:
+        stmt = select(Role).where(Role.name == role_name)
         role = self.session.scalar(stmt)
         if role:
             return role.id
 
         new_id = generate_alphanumerical_id()
-        role = Role(id=new_id, name="admin")
+        role = Role(id=new_id, name=role_name)
         self.session.add(role)
         self.session.commit()
         return new_id
@@ -267,6 +267,18 @@ class AccessManager(BaseManager):
             role_id=admin_role_id,
             allowed_method="*",
             route_url="*",
+        )
+        self.session.add(access)
+        self.session.commit()
+        return new_id
+
+    def grant(self, role_id: str, *, permission_to_perform: str, at: str) -> str:
+        new_id = generate_alphanumerical_id()
+        access = Access(
+            id=new_id,
+            role_id=role_id,
+            allowed_method=permission_to_perform,
+            route_url=at,
         )
         self.session.add(access)
         self.session.commit()

@@ -58,10 +58,18 @@ def obtain_jwt_token_for(login: str, plain_password: str) -> str:
 
 
 def grant_all_the_accesses_for(new_user_id: str):
-    admin_role_id = RoleManager().ensure_admin_role_exists()
+    admin_role_id = RoleManager().ensure_role_exists("admin")
 
     RoleManager().assign(new_user_id, admin_role_id)
     AccessManager().grant_unlimited_access_to(admin_role_id)
+
+
+def grant_basic_accesses_for(new_user_id: str):
+    user_role_id = RoleManager().ensure_role_exists("user")
+
+    RoleManager().assign(new_user_id, user_role_id)
+    AccessManager().grant(user_role_id, permission_to_perform="GET", at="/receipts")
+    AccessManager().grant(user_role_id, permission_to_perform="POST", at="/receipts")
 
 
 def create_new_user_with_following(
@@ -82,6 +90,7 @@ def create_new_user_with_following(
     is_first_user_ever = user_manager.fetch_total_user_count() < 0
     if is_first_user_ever:
         grant_all_the_accesses_for(new_user_id)
+    grant_basic_accesses_for(new_user_id)
 
 
 def assign_existing_role_with(role_name: str, *, to: str) -> bool:
