@@ -1,4 +1,7 @@
-from src.core.db.base import create_session
+from datetime import datetime
+from decimal import Decimal
+from typing import Literal
+
 from src.core.db.managers import DBAppConfigManager, ReceiptCacheManager, ReceiptManager
 from src.core.db.models import Receipt
 from src.core.handlers.receipts.rendering import build_str_repr_of_receipt
@@ -33,31 +36,30 @@ def convert_to_dict_repr(receipt_raw_data: Receipt) -> dict[str, str]:
 
 
 def render_as_str_receipt_with(receipt_id: str, width: int) -> str:
-    with create_session() as session:
-        receipt_raw_data: Receipt | None = ReceiptManager(session).fetch_specific_by(
-            receipt_id
-        )
-        if receipt_raw_data is None:
-            raise KeyError(f"Receipt(id={receipt_id}) is not found in DB!")
+    receipt_manager = ReceiptManager()
 
-        formatting_config: dict[str, str | int] = DBAppConfigManager(
-            session
-        ).fetch_receipt_formatting_configs()
+    receipt_raw_data: Receipt | None = receipt_manager.fetch_specific_by(receipt_id)
+    if receipt_raw_data is None:
+        raise KeyError(f"Receipt(id={receipt_id}) is not found in DB!")
 
-        config_string: str = ":".join(formatting_config.values()) + f":{width}"
+    formatting_config: dict[str, str | int] = (
+        DBAppConfigManager().fetch_receipt_formatting_configs()
+    )
 
-        cache = ReceiptCacheManager(session)
+    config_string: str = ":".join(formatting_config.values()) + f":{width}"
 
-        cached_txt = cache.fetch_cache_for(receipt_id, config_string)
-        if cached_txt:
-            return cached_txt
+    cache = ReceiptCacheManager()
 
-        formatting_config["width"] = width
+    cached_txt = cache.fetch_cache_for(receipt_id, config_string)
+    if cached_txt:
+        return cached_txt
 
-        rendered_receipt = build_str_repr_of_receipt(
-            convert_to_dict_repr(receipt_raw_data),
-            formatting_config,
-        )
-        cache.create_new_entry_with(receipt_id, config_string, rendered_receipt)
+    formatting_config["width"] = width
+
+    rendered_receipt = build_str_repr_of_receipt(
+        convert_to_dict_repr(receipt_raw_data),
+        formatting_config,
+    )
+    cache.create_new_entry_with(receipt_id, config_string, rendered_receipt)
 
     return rendered_receipt
