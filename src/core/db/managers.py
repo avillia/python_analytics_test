@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import select, update, insert
@@ -288,6 +289,53 @@ class AccessManager(BaseManager):
 class ReceiptManager(BaseManager):
     model = Receipt
 
+    def filter_and_paginate_using(
+        self,
+        user_id: str,
+        limit: int,
+        offset: int,
+        filters: dict,
+    ) -> tuple[int, list[Receipt]]:
+        query = (
+            select(Receipt)
+            .options(joinedload(Receipt.items))
+            .where(Receipt.user_id == user_id)
+        )
+
+        if created_after := filters.get("created_after"):
+            query = query.where(Receipt.creation_date >= created_after)
+        if created_before := filters.get("created_before"):
+            query = query.where(Receipt.creation_date <= created_before)
+        if payment_type := filters.get("payment_type"):
+            query = query.where(Receipt.is_cashless_payment == payment_type)
+
+        min_total = filters.get("min_total")
+        max_total = filters.get("max_total")
+
+        if min_total is not None or max_total is not None:
+            query = query.join(Receipt.items).group_by(Receipt.id)
+            total_expr = func.sum(ReceiptItems.price * ReceiptItems.quantity)
+            if min_total is not None:
+                query = query.having(total_expr >= min_total)
+            if max_total is not None:
+                query = query.having(total_expr <= max_total)
+
+        query = query.order_by(Receipt.creation_date.desc())
+
+        all_receipts: list[Receipt] = self.session.scalars(query).unique().all()
+
+        paginated = all_receipts[offset : offset + limit]
+
+        return len(all_receipts), paginated
+
+    def fetch_including_items_for(self, receipt_id: str) -> Receipt:
+        query = (
+            select(Receipt)
+            .options(joinedload(Receipt.items))
+            .where(Receipt.id == receipt_id)
+        )
+        return self.session.scalar(query)
+
     def create_receipt(
         self,
         user_id: str,
@@ -313,9 +361,14 @@ class ReceiptManager(BaseManager):
             self.session.add(receipt_item)
 
         self.session.commit()
-        return receipt
+        fetch_receipt_with_items_included = (
+            select(Receipt)
+            .options(joinedload(Receipt.items))
+            .where(Receipt.id == receipt.id)
+        )
+        return self.session.scalar(fetch_receipt_with_items_included)
 
-    def fetch_all_for_specific_user_with(self, user_id: str) -> list[Receipt]:
+    def fetch_all_for_user_with(self, user_id: str) -> list[Receipt]:
         return self.session.scalars(
             select(Receipt).where(Receipt.user_id == user_id)
         ).all()
@@ -348,3 +401,12 @@ class ReceiptCacheManager(BaseManager):
         )
         self.session.add(new_cache_entry)
         self.session.commit()
+
+    def delete(self, receipt_id: str) -> bool:
+        receipt_cache = self.session.scalar(select(TxtReceiptCache).where(TxtReceiptCache.receipt_id == receipt_id))
+        if not receipt_cache:
+            return False
+        self.session.delete(receipt_cache)
+        self.session.commit()
+        return True
+
