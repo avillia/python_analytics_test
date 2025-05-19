@@ -28,10 +28,7 @@ def are_passwords_matching(
     return compare_digest(computed_hash, hash_from_db)
 
 
-def retrieve_data_depending_on(
-    login: str,
-    plain_password: str,
-) -> tuple[str, list[str]]:
+def retrieve_data_depending_on(login: str, plain_password: str) -> str:
     user_manager = UserManager()
     user = user_manager.lookup_for_user_by(login)
     if user is None:
@@ -40,16 +37,10 @@ def retrieve_data_depending_on(
     if not are_passwords_matching(plain_password, user.id, user.password_hash):
         raise KeyError(f"Wrong password for user [{login}]! Try again!")
 
-    user_id = user.id
-    accesses_as_str = [
-        f"{access.allowed_method}@{access.route_url}"
-        for access in user_manager.gather_all_accesses_for(user_id)
-    ]
-
-    return user_id, accesses_as_str
+    return user.id
 
 
-def generate_jwt_token_for(user_id: str, accesses: list[str]) -> str:
+def generate_jwt_token_for(user_id: str) -> str:
     config = DBAppConfigManager()
     expire = datetime.now() + timedelta(minutes=config["ACCESS_TOKEN_EXPIRE_MINUTES"])
 
@@ -62,8 +53,8 @@ def generate_jwt_token_for(user_id: str, accesses: list[str]) -> str:
 
 
 def obtain_jwt_token_for(login: str, plain_password: str) -> str:
-    user, accesses = retrieve_data_depending_on(login, plain_password)
-    return generate_jwt_token_for(user, accesses)
+    user = retrieve_data_depending_on(login, plain_password)
+    return generate_jwt_token_for(user)
 
 
 def grant_all_the_accesses_for(new_user_id: str):
